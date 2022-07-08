@@ -1,4 +1,6 @@
 #!/usr/bin/env python3.10
+# maybe bad code
+# need to be fixed in short time
 import discord, requests, time
 import json, random, mcrcon
 import os, subprocess, asyncio
