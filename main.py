@@ -1,10 +1,8 @@
 #!/usr/bin/env python3.10
-# maybe bad code
-# need to be fixed in short time
 import discord, requests, time
 import json, random, mcrcon
 import os, subprocess, asyncio
-import textwrap, threading
+import textwrap, threading, logging
 
 from datetime import datetime
 from discord.ext import commands
@@ -14,14 +12,17 @@ from mcrcon import MCRcon
 bot = commands.Bot(command_prefix='!',intents=discord.Intents.all())
 bot.remove_command('help')
 
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='[%H:%M:%S]', level=logging.INFO)
+#logging.basicConfig(level=logging.WARNING)
+
 try:
 	cred_file = open('configuration.secret', 'r')
 	configuration = cred_file.read().split('\n')
 	cred_file.close()
 except FileNotFoundError:
-	print('Creating configuration file for you...')
+	logging.info('Creating configuration file for you...')
 	open('configuration.secret', 'w').write('discord bot token\nminecraft server ip\nminecraft rcon port\nminecraft rcon password\nfull path to your minecraft server')
-	print('edit configuration.secret text file and run me!')
+	logging.info('edit configuration.secret text file and run me!')
 	exit()
 
 BOT_TOKEN = configuration[0]
@@ -37,33 +38,22 @@ if SERVER_PATH.endswith('/'):
 START_TIME = datetime.now()
 
 class MinecraftServer:
-	def __init__(self, _process=None):
-		self.process = _process
-	def start(self):
+	def start():
 		executable = SERVER_PATH + '/start.sh'
 		os.chdir(SERVER_PATH)
 		proc = subprocess.Popen(executable, stdout=subprocess.DEVNULL)
-		print(proc.pid)
-		print(proc)
-		print(proc.stdin)
 		return proc
-	def stop(self):
-		print('stop', file=process.stdin)
-		time.sleep(5)
-		self.process.kill()
-	def console(self):
+	def console():
 		logs_file = open(SERVER_PATH + '/logs/latest.log')
 		logs = logs_file.read()
 		logs_file.close()
 		return logs
-	def command(self, cmd):
-		print(cmd, file=self.process.stdin)
 
+# Long delay cycle
 async def long_delay():
-	# Long delay cycle
 	paper_builds = await paper_update()
 	while True:
-		# Checking paper updates
+		# Check paper updates
 		await asyncio.sleep(300)
 
 		new_paper_builds = await paper_update()
@@ -72,17 +62,19 @@ async def long_delay():
 		if response:
 			paper_builds = new_paper_builds
 
-		# Updating stats
+		# Update statistics in voice channels
 		await update_stats()
 
-async def console_logger(proc):
-	console_log = MinecraftServer(proc).console()
+async def console_logger():
+	# Get server logs
+	console_log = MinecraftServer.console()
 	while True:
 		await asyncio.sleep(1)
 		console_channel = bot.get_channel(984545711364386856)
 
-		new_clog = MinecraftServer(proc).console()
+		new_clog = MinecraftServer.console()
 
+		# some bugs, need to be fixed
 		if len(new_clog) != len(console_log) and len(new_clog) > 1:
 			if 'Thread RCON Client /127.0.0.1' in new_clog: return
 			console_log = new_clog.replace(console_log, '')
@@ -104,7 +96,7 @@ async def paper_update(function='get', *args):
 			paper_builds = json.loads(requests.get('https://api.papermc.io/v2/projects/paper/version_group/1.19/builds').text)["builds"]
 			return paper_builds
 		case 'check':
-			# checking updates
+			# check updates
 			if len(args[0]) < len(args[1]):
 				update_channel = bot.get_channel(982254771534704641)
 
@@ -115,31 +107,31 @@ async def paper_update(function='get', *args):
 				# some variables
 				number = last_build["build"]; version = last_build["version"]; changes = last_build["changes"]; commit_url = f'https://github.com/paperMC/paper/commit/{last_build["changes"][0]["commit"]}'; download_url = f'https://api.papermc.io/v2/projects/paper/versions/{version}/builds/{number}/downloads/paper-{version}-{number}.jar'
 
-				# generating buttons
+				# generate buttons
 				buttons = [Button(label='Скачать', style=discord.ButtonStyle.green, url=download_url),Button(label='GitHub', style=discord.ButtonStyle.green, url=commit_url)]
 				view = View()
 
-				# appending buttons to list
+				# append buttons to list
 				for btn in buttons:
 					view.add_item(btn)
 
-				# generating embed
+				# generate embed
 				embed=discord.Embed(title='Найдено обновление!', description=f'`PaperMC {version} | #{number}`\n`{changes[0]["summary"]}`')
 				embed.set_author(name='PaperMC', icon_url='https://media.discordapp.net/attachments/981094724939153448/994578831996366878/unknown.png')
 				embed.timestamp = datetime.now()
 
 				await update_channel.send(embed=embed, view=view)
 				
-				# returning true value because there's new paper version
+				# return true value because there's new paper version
 				return True
 			else:
-				# returning false cause there's no new paper version :(
+				# return false cause there's no new paper version :(
 				return False
 
 # Update statistics category
 async def update_stats():
-	online_channel = bot.get_channel(984165492224831508) # Channel showing server online
-	tps_channel = bot.get_channel(984165542699085855) # Channel showing server TPS
+	online_channel = bot.get_channel(984165492224831508) # Channel that show server online
+	tps_channel = bot.get_channel(984165542699085855) # Channel that show server TPS
 
 	with MCRcon(SERVER_IP, RCON_PASSWD, port=RCON_PORT) as mcr:
 		tps = mcr.command("papi parse --null %server_tps_1%")[:-1]
@@ -153,7 +145,7 @@ async def update_stats():
 @bot.event
 async def on_ready():
 	took_time = datetime.now()-START_TIME
-	print(f'[{time.strftime("%H:%M:%S")}] Done! (took {took_time.seconds}s)')
+	logging.info(f'Done! (took {took_time.seconds}s)')
 	bot.loop.create_task(long_delay())
 
 @bot.event
@@ -167,13 +159,15 @@ async def on_message(m):
 	if m.channel.id == 984545711364386856:
 		match msg:
 			case 'start':
+				logging.warning(f'{m.author.name}#{m.author.discriminator} started server')
 				await m.channel.send(':white_check_mark: `Запускаю сервер...`')
-				proc = MinecraftServer().start()
-				bot.loop.create_task(console_logger(proc))
+				MinecraftServer.start()
+				bot.loop.create_task(console_logger())
 			case _:
 				try:
 					with MCRcon(SERVER_IP, RCON_PASSWD, port=RCON_PORT) as mcr:
 						output = mcr.command(m.content)
+					logging.warning(f'{m.author.name}#{m.author.discriminator} sended command: {m.content}')
 					await m.channel.send(f'`{output}`')
 				except ConnectionRefusedError:
 					await m.channel.send('Сервер не запущен. Напишите `start` для запуска.')
@@ -188,7 +182,7 @@ async def on_message(m):
 async def on_voice_state_update(member,_,after):
 	if after.channel is not None:
 		if after.channel.id == 981955747577475083:
-			# getting category; defining variables
+			# get category; define variables
 			ctg = discord.utils.get(member.guild.categories, id=961942312588542022)
 			emojis = ['🔶', '🔥', '⭐️', '⚡️', '✨', '🟠']
 			username = member.name
@@ -196,7 +190,7 @@ async def on_voice_state_update(member,_,after):
 			if member.nick is not None:
 				username = member.nick
 
-			# creating voice channel, adding permissions and moving member to this channel
+			# create voice channel, add permissions and move member to this channel
 			chn = await guild.create_voice_channel(name=f"{random.choice(emojis)} {username}",category=ctg)
 
 			await chn.set_permissions(member, connect=True, move_members=True, manage_channels=True)
@@ -210,5 +204,5 @@ async def on_voice_state_update(member,_,after):
 			await chn.delete()
 
 if __name__ == '__main__':
-	print(f'[{time.strftime("%H:%M:%S")}] Starting...')
+	logging.info('Starting...')
 	bot.run(BOT_TOKEN)
