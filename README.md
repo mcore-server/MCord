@@ -1,6 +1,5 @@
 # 🟦 MCore Discord Bot
-Tested on the following systems:
-- `Arch Linux | Python 3.10.5`
+Working only on Linux systems.
 # Installation
 ```
 git clone https://github.com/mcore-server/discord-bot.git
