@@ -1,3 +1,4 @@
 *.secret
 *.db
 *.log
+*.pyc

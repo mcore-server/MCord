@@ -1,8 +1,8 @@
 #!/usr/bin/env python3.10
-import discord, requests, time
-import json, random, mcrcon
-import os, subprocess, asyncio
-import textwrap, threading, logging
+import discord, requests, json
+import random, os, subprocess
+import asyncio, textwrap, logging
+import sqlite3
 
 from datetime import datetime
 from discord.ext import commands
@@ -13,7 +13,9 @@ bot = commands.Bot(command_prefix='!',intents=discord.Intents.all())
 bot.remove_command('help')
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='[%H:%M:%S]', level=logging.INFO)
-#logging.basicConfig(level=logging.WARNING)
+
+con = sqlite3.connect('db/bot.db')
+cur = con.cursor()
 
 try:
 	cred_file = open('configuration.secret', 'r')
@@ -133,17 +135,25 @@ async def update_stats():
 	online_channel = bot.get_channel(984165492224831508) # Channel that show server online
 	tps_channel = bot.get_channel(984165542699085855) # Channel that show server TPS
 
-	with MCRcon(SERVER_IP, RCON_PASSWD, port=RCON_PORT) as mcr:
-		tps = mcr.command("papi parse --null %server_tps_1%")[:-1]
-		online = mcr.command("papi parse --null %server_online%")[:-1]
-	
-	await tps_channel.edit(name=f'TPS: {tps}')
-	await online_channel.edit(name=f'Онлайн: {online}')
+	try:
+		with MCRcon(SERVER_IP, RCON_PASSWD, port=RCON_PORT) as mcr:
+			tps = mcr.command("papi parse --null %server_tps_1%")[:-1]
+			online = mcr.command("papi parse --null %server_online%")[:-1]
+		tps_text = f'TPS: {tps}'
+		online_text = f'Онлайн: {online}'
+	except ConnectionRefusedError:
+		tps_text = f'TPS: сервер выключен'
+		online_text = f'Онлайн: сервер выключен'
+
+	await tps_channel.edit(name=tps_text)
+	await online_channel.edit(name=online_text)
 
 ###############################
 
 @bot.event
 async def on_ready():
+	#cur.execute('''create table''')
+	#con.commit()
 	took_time = datetime.now()-START_TIME
 	logging.info(f'Done! (took {took_time.seconds}s)')
 	bot.loop.create_task(long_delay())
@@ -153,6 +163,7 @@ async def on_message(m):
 	# await bot.process_commands(m)
 	#global proc
 	msg = m.content.lower()
+	print()
 
 	if m.author == bot.user: return
 
@@ -172,6 +183,14 @@ async def on_message(m):
 				except ConnectionRefusedError:
 					await m.channel.send('Сервер не запущен. Напишите `start` для запуска.')
 		return
+	
+	# sudo commands
+	if msg.startswith('#'):
+		if not m.author.guild_permissions.mention_everyone: return
+		command = msg[1:]
+		match command:
+			case 'log':
+				pass
 
 	match msg:
 		case '!ping':
@@ -184,14 +203,14 @@ async def on_voice_state_update(member,_,after):
 		if after.channel.id == 981955747577475083:
 			# get category; define variables
 			ctg = discord.utils.get(member.guild.categories, id=961942312588542022)
-			emojis = ['🔶', '🔥', '⭐️', '⚡️', '✨', '🟠']
+			emojis = ['🔥', '⭐️', '⚡️', '✨']
 			username = member.name
 
 			if member.nick is not None:
 				username = member.nick
 
 			# create voice channel, add permissions and move member to this channel
-			chn = await guild.create_voice_channel(name=f"{random.choice(emojis)} {username}",category=ctg)
+			chn = await member.guild.create_voice_channel(name=f"{random.choice(emojis)} {username}",category=ctg)
 
 			await chn.set_permissions(member, connect=True, move_members=True, manage_channels=True)
 			await member.move_to(chn)
@@ -205,4 +224,8 @@ async def on_voice_state_update(member,_,after):
 
 if __name__ == '__main__':
 	logging.info('Starting...')
+	for file in os.listdir("cogs"): 
+		if file.endswith(".py"): 
+			name = file[:-3]
+			bot.load_extension(f"cogs.{name}")
 	bot.run(BOT_TOKEN)
