@@ -1,6 +1,10 @@
-# 🟦 MCore Discord Bot
-### [Here you can see the progress of discord bot](https://github.com/orgs/mcore-server/projects/3/)
+# 🟦 MCord
 
+![MCord](https://raw.githubusercontent.com/mcore-server/MCord/master/assets/logo.png)
+
+### [Project](https://github.com/orgs/mcore-server/projects/3/)
+
+MCore Python discord bot.
 Working only on Linux systems now.
 
 # Installation
