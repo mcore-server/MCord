@@ -1,5 +1,5 @@
 # 🟦 MCore Discord Bot
-### Here you can see the progress of discord bot - https://github.com/orgs/mcore-server/projects/3/
+### [Here you can see the progress of discord bot](https://github.com/orgs/mcore-server/projects/3/)
 
 Working only on Linux systems now.
 
