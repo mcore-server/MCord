@@ -1,4 +1,4 @@
-*.secret
+config.py
 *.db
 *.log
-*.pyc
+__pycache__
