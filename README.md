@@ -1,6 +1,6 @@
 # 🟦 MCord
 
-![MCord](https://raw.githubusercontent.com/mcore-server/MCord/master/assets/logo.png)
+<img src="https://raw.githubusercontent.com/mcore-server/MCord/master/assets/logo.png" alt="MCore" style="width:150px;"/>
 
 ### [Project](https://github.com/orgs/mcore-server/projects/3/)
 
