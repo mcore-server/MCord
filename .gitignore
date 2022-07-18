@@ -1,4 +1,4 @@
-config.py
+/config.py
 *.db
 *.log
 __pycache__

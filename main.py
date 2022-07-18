@@ -222,15 +222,11 @@ async def on_message(m):
 	if msg.startswith('#'):
 		if not m.author.guild_permissions.mention_everyone:
 			return
-		command = msg[1:]
+		command = msg[1:].split(' ')[0]
+		print(command)
 		match command:
-			case 'log':
-				arg = command.split(' ')[1:]
-				if len(arg) == 1:
-					db_log = cur.execute('SELECT * FROM logs WHERE id = ?', (arg[0])).fetchone()
-				else:
-					await m.channel.send('`#log <id>`')
-					return
+			case 'test':
+				await m.channel.send('hi')
 
 	match msg:
 		case '!ping':

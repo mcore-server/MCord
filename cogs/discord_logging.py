@@ -34,8 +34,8 @@ class Logging:
 
 		log_message = await log_channel.send(embed=embed)
 
-		self.cur.execute('INSERT INTO log VALUES (?, ?, ?, ?)',
-						 (log_id, log_type, log_message.id, log_content,))
+		self.cur.execute('INSERT INTO log VALUES (?, ?, ?, ?, ?)',
+						 (log_id, log_type, log_message.id, log_content, attachment,))
 		self.con.commit()
 
 
@@ -48,7 +48,8 @@ class LoggingCog(commands.Cog):
 			id INT,
 			type INT,
 			message_id INT,
-			content TEXT
+			content TEXT,
+			attachment TEXT
 		)''')
 		self.con.commit()
 
@@ -64,14 +65,18 @@ class LoggingCog(commands.Cog):
 		if msg.startswith('#'):
 			if not m.author.guild_permissions.mention_everyone:
 				return
-			command = msg[1:]
+			command = msg[1:].split(' ')[0]
 			match command:
 				case 'log':
-					arg = command.split(' ')[1:]
+					arg = msg.split(' ')[1:]
 					if len(arg) == 1:
 						db_log = self.cur.execute(
-							'SELECT * FROM logs WHERE id = ?', (int(arg)[0])).fetchone()
-						await m.channel.send()
+							'SELECT * FROM log WHERE id = ?', (int(arg[0]),)).fetchone()
+						embed = discord.Embed(
+							title=f'#{db_log[0]} [{db_log[1]}]', description=db_log[3])
+						if db_log[4] is not None:
+							embed.set_image(db_log[4])
+						await m.channel.send(embed=embed)
 					else:
 						await m.channel.send('`#log <id>`')
 						return
