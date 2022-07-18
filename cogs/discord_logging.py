@@ -53,100 +53,100 @@ class LoggingCog(commands.Cog):
 		self.con.commit()
 
 
-@commands.Cog.listener()
-async def on_message(self, m):
-	msg = m.content.lower()
+	@commands.Cog.listener()
+	async def on_message(self, m):
+		msg = m.content.lower()
 
-	if m.author == self.bot.user:
-		return
-
-	# sudo commands
-	if msg.startswith('#'):
-		if not m.author.guild_permissions.mention_everyone:
+		if m.author == self.bot.user:
 			return
-		command = msg[1:]
-		match command:
-			case 'log':
-				arg = command.split(' ')[1:]
-				if len(arg) == 1:
-					db_log = self.cur.execute(
-						'SELECT * FROM logs WHERE id = ?', (int(arg)[0])).fetchone()
-					await m.channel.send()
-				else:
-					await m.channel.send('`#log <id>`')
-					return
+
+		# sudo commands
+		if msg.startswith('#'):
+			if not m.author.guild_permissions.mention_everyone:
+				return
+			command = msg[1:]
+			match command:
+				case 'log':
+					arg = command.split(' ')[1:]
+					if len(arg) == 1:
+						db_log = self.cur.execute(
+							'SELECT * FROM logs WHERE id = ?', (int(arg)[0])).fetchone()
+						await m.channel.send()
+					else:
+						await m.channel.send('`#log <id>`')
+						return
 
 
-@commands.Cog.listener()
-async def on_message_delete(self, m):
-	created_at = m.created_at.strftime('%d-%m-%Y %H:%M:%S')
+	@commands.Cog.listener()
+	async def on_message_delete(self, m):
+		created_at = m.created_at.strftime('%d-%m-%Y %H:%M:%S')
 
-	log_content = f'{m.author} удалил сообщение.\n[{created_at}] "{m.content}"\nКанал: <#{m.channel.id}>'
+		log_content = f'{m.author} удалил сообщение.\n[{created_at}] "{m.content}"\nКанал: <#{m.channel.id}>'
 
-	await Logging(self.bot, self.con).write_log(1, log_content)
-
-
-@commands.Cog.listener()
-async def on_message_edit(self, before, after):
-	created_at = after.created_at.strftime('%d-%m-%Y %H:%M:%S')
-	edited_at = after.edited_at.strftime('%d-%m-%Y %H:%M:%S')
-
-	log_content = f'{after.author} отредактировал сообщение.\n[{created_at}] "{before.content}"\n[{edited_at}] "{after.content}"\nКанал: <#{after.channel.id}>'
-
-	await Logging(self.bot, self.con).write_log(1, log_content)
+		await Logging(self.bot, self.con).write_log(1, log_content)
 
 
-@commands.Cog.listener()
-async def on_raw_reaction_add(self, payload):
-	channel = self.bot.get_channel(payload.channel_id)
-	message = await channel.fetch_message(payload.message_id)
-	created_at = message.created_at.strftime('%d-%m-%Y %H:%M:%S')
+	@commands.Cog.listener()
+	async def on_message_edit(self, before, after):
+		created_at = after.created_at.strftime('%d-%m-%Y %H:%M:%S')
+		edited_at = after.edited_at.strftime('%d-%m-%Y %H:%M:%S')
 
-	log_content = f'{payload.member} оставил реакцию {payload.emoji} под сообщением от {message.author}.\n[{created_at}] "{message.content}"\nКанал: <#{message.channel.id}>'
+		log_content = f'{after.author} отредактировал сообщение.\n[{created_at}] "{before.content}"\n[{edited_at}] "{after.content}"\nКанал: <#{after.channel.id}>'
 
-	await Logging(self.bot, self.con).write_log(2, log_content)
-
-
-@commands.Cog.listener()
-async def on_raw_reaction_remove(self, payload):
-	channel = self.bot.get_channel(payload.channel_id)
-	message = await channel.fetch_message(payload.message_id)
-	created_at = message.created_at.strftime('%d-%m-%Y %H:%M:%S')
-
-	log_content = f'{payload.member} убрал реакцию {payload.emoji} под сообщением от {message.author}.\n[{created_at}] "{message.content}"\nКанал: <#{message.channel.id}>'
-
-	await Logging(self.bot, self.con).write_log(2, log_content)
+		await Logging(self.bot, self.con).write_log(1, log_content)
 
 
-@commands.Cog.listener()
-async def on_raw_reaction_clear(self, payload):
-	channel = self.bot.get_channel(payload.channel_id)
-	message = await channel.fetch_message(payload.message_id)
+	@commands.Cog.listener()
+	async def on_raw_reaction_add(self, payload):
+		channel = self.bot.get_channel(payload.channel_id)
+		message = await channel.fetch_message(payload.message_id)
+		created_at = message.created_at.strftime('%d-%m-%Y %H:%M:%S')
 
-	log_content = f'Реакции были очищены под [сообщением](http://discord.com/channels/{channel.guild.id}/{channel.id}/{message.id}) в канале <#{channel.id}>'
+		log_content = f'{payload.member} оставил реакцию {payload.emoji} под сообщением от {message.author}.\n[{created_at}] "{message.content}"\nКанал: <#{message.channel.id}>'
 
-	await Logging(self.bot, self.con).write_log(2, log_content)
-
-
-@commands.Cog.listener()
-async def on_member_join(self, member):
-	log_content = f'Участник {member.mention} ({member}) присоединился к Discord серверу.'
-
-	await Logging(self.bot, self.con).write_log(2, log_content)
+		await Logging(self.bot, self.con).write_log(2, log_content)
 
 
-@commands.Cog.listener()
-async def on_member_remove(self, member):
-	log_content = f'Участник {member.mention} ({member}) покинул Discord сервер.'
+	@commands.Cog.listener()
+	async def on_raw_reaction_remove(self, payload):
+		channel = self.bot.get_channel(payload.channel_id)
+		message = await channel.fetch_message(payload.message_id)
+		created_at = message.created_at.strftime('%d-%m-%Y %H:%M:%S')
 
-	await Logging(self.bot, self.con).write_log(2, log_content)
+		log_content = f'{payload.member} убрал реакцию {payload.emoji} под сообщением от {message.author}.\n[{created_at}] "{message.content}"\nКанал: <#{message.channel.id}>'
+
+		await Logging(self.bot, self.con).write_log(2, log_content)
 
 
-@commands.Cog.listener()
-async def on_member_ban(self, _, member):
-	log_content = f'Участник {member.mention} ({member}) был заблокирован.'
+	@commands.Cog.listener()
+	async def on_raw_reaction_clear(self, payload):
+		channel = self.bot.get_channel(payload.channel_id)
+		message = await channel.fetch_message(payload.message_id)
 
-	await Logging(self.bot, self.con).write_log(2, log_content)
+		log_content = f'Реакции были очищены под [сообщением](http://discord.com/channels/{channel.guild.id}/{channel.id}/{message.id}) в канале <#{channel.id}>'
+
+		await Logging(self.bot, self.con).write_log(2, log_content)
+
+
+	@commands.Cog.listener()
+	async def on_member_join(self, member):
+		log_content = f'Участник {member.mention} ({member}) присоединился к Discord серверу.'
+
+		await Logging(self.bot, self.con).write_log(2, log_content)
+
+
+	@commands.Cog.listener()
+	async def on_member_remove(self, member):
+		log_content = f'Участник {member.mention} ({member}) покинул Discord сервер.'
+
+		await Logging(self.bot, self.con).write_log(2, log_content)
+
+
+	@commands.Cog.listener()
+	async def on_member_ban(self, _, member):
+		log_content = f'Участник {member.mention} ({member}) был заблокирован.'
+
+		await Logging(self.bot, self.con).write_log(2, log_content)
 
 
 def setup(bot):
