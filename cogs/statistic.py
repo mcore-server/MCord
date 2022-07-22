@@ -5,8 +5,6 @@ from mcrcon import MCRcon
 from discord.ext import commands
 from asyncio import sleep
 
-BOT_TOKEN = getattr(config, "token", None)
-
 SERVER_IP = getattr(config, "ip", None)
 RCON_PORT = getattr(config, "rport", None)
 RCON_PASSWD = getattr(config, "rpasswd", None)

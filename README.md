@@ -19,7 +19,7 @@ Working only on Linux systems now.
 # You need git and python3.10 packages for install and running
 git clone https://github.com/mcore-server/MCord.git
 cd MCord
-# If this line giving an error try install python3(.10)-pip package
+# If this line gives an error, try install python3(.10)-pip package
 python3.10 -m pip install -r requirements.txt
 ```
 # Running

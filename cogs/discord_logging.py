@@ -26,7 +26,9 @@ class Logging:
 
         log_id = len(all_logs) + 1
 
-        embed = discord.Embed(title=f"#{log_id} [{log_type}]", description=log_content)
+        embed = discord.Embed(
+            title=f"#{log_id} [{log_type}]", description=log_content, color=0x2F3136
+        )
 
         if attachment:
             embed.set_image(attachment)
@@ -74,15 +76,23 @@ class LoggingCog(commands.Cog):
             if not m.author.guild_permissions.mention_everyone:
                 return
             command = msg[1:].split(" ")[0]
+            log_content = f"{m.author} отправил боту sudo-команду: {m.content[1:]}\nКанал: <#{m.channel.id}>"
+            await Logging(self.bot, self.con).write_log(4, log_content)
             match command:
                 case "log":
+
                     arg = msg.split(" ")[1:]
                     if len(arg) == 1:
                         db_log = self.cur.execute(
                             "SELECT * FROM log WHERE id = ?", (int(arg[0]),)
                         ).fetchone()
+                        if db_log is None:
+                            await m.channel.send("Лог с таким номером не найден.")
+                            return
                         embed = discord.Embed(
-                            title=f"#{db_log[0]} [{db_log[1]}]", description=db_log[3]
+                            title=f"#{db_log[0]} [{db_log[1]}]",
+                            description=db_log[3],
+                            color=0x2F3136,
                         )
                         if db_log[4] is not None:
                             embed.set_image(db_log[4])
@@ -90,6 +100,10 @@ class LoggingCog(commands.Cog):
                     else:
                         await m.channel.send("`#log <id>`")
                         return
+
+        if msg.startswith("!"):
+            log_content = f"{m.author} отправил боту команду: {m.content[1:]}\nКанал: <#{m.channel.id}>"
+            await Logging(self.bot, self.con).write_log(4, log_content)
 
     @commands.Cog.listener()
     async def on_message_delete(self, m):
@@ -154,6 +168,18 @@ class LoggingCog(commands.Cog):
     @commands.Cog.listener()
     async def on_member_ban(self, _, member):
         log_content = f"Участник {member.mention} ({member}) был заблокирован."
+
+        await Logging(self.bot, self.con).write_log(2, log_content)
+
+    @commands.Cog.listener()
+    async def on_member_unban(self, _, member):
+        log_content = f"Участник {member.mention} ({member}) был разблокирован."
+
+        await Logging(self.bot, self.con).write_log(2, log_content)
+
+    @commands.Cog.listener()
+    async def on_invite_create(self, invite):
+        log_content = f"Участник {invite.inviter.mention} ({invite.inviter}) создал приглашение на сервер - {invite.url}."
 
         await Logging(self.bot, self.con).write_log(2, log_content)
 
