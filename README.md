@@ -1,4 +1,5 @@
 # MCord
+# ⚠️ Outdated! Not recommended to use.
 
 <img src="https://raw.githubusercontent.com/mcore-server/MCord/master/assets/logo.png" alt="MCore" style="width:300px;" align="right"/>
 
